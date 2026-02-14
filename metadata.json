@@ -1,0 +1,5 @@
+{
+  "name": "WhatCard",
+  "description": "An intelligent assistant to help you choose the best credit card for every purchase based on rewards, benefits, and active offers.",
+  "requestFramePermissions": []
+}

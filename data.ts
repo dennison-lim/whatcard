@@ -1,0 +1,132 @@
+import { CreditCard, UserOffer } from './types';
+
+export const allCards: CreditCard[] = [
+  {
+    id: 'amex-plat',
+    name: 'Platinum Card®',
+    issuer: 'Amex',
+    annualFee: 695,
+    imageColor: 'bg-stone-300',
+    baseBonusCategories: [
+      { id: 'ap-flights', name: 'Flights', multiplier: 5.0, currency: 'MR', capAmount: 500000 },
+      { id: 'ap-hotels', name: 'Hotels', multiplier: 5.0, currency: 'MR' },
+      { id: 'ap-base', name: 'Other', multiplier: 1.0, currency: 'MR' },
+    ],
+    benefits: [
+      { id: 'ap-uber', name: 'Uber Cash', merchantFilter: ['uber', 'uber eats'], amount: 15, frequency: 'monthly', type: 'credit' },
+      { id: 'ap-saks', name: 'Saks Credit', merchantFilter: ['saks', 'saks fifth avenue'], amount: 50, frequency: 'quarterly', type: 'credit' },
+      { id: 'ap-digital', name: 'Digital Ent.', merchantFilter: ['disney', 'hulu', 'espn', 'peacock', 'nyt', 'wsj'], amount: 20, frequency: 'monthly', type: 'credit' },
+      { id: 'ap-equinox', name: 'Equinox Credit', merchantFilter: ['equinox'], amount: 300, frequency: 'annually', type: 'credit' },
+      { id: 'ap-walmart', name: 'Walmart+ Credit', merchantFilter: ['walmart'], amount: 12.95, frequency: 'monthly', type: 'credit' },
+      { id: 'ap-airline', name: 'Airline Fee Credit', merchantFilter: ['delta', 'united', 'jetblue', 'southwest', 'alaska'], amount: 200, frequency: 'annually', type: 'credit' },
+    ],
+  },
+  {
+    id: 'amex-gold',
+    name: 'Gold Card',
+    issuer: 'Amex',
+    annualFee: 325,
+    imageColor: 'bg-yellow-400',
+    baseBonusCategories: [
+      { id: 'ag-dining', name: 'Dining', multiplier: 4.0, currency: 'MR' },
+      { id: 'ag-groceries', name: 'Supermarkets', multiplier: 4.0, currency: 'MR', capAmount: 25000 },
+      { id: 'ag-flights', name: 'Flights', multiplier: 3.0, currency: 'MR' },
+      { id: 'ag-base', name: 'Other', multiplier: 1.0, currency: 'MR' },
+    ],
+    benefits: [
+      { id: 'ag-dining-credit', name: 'Dining Credit', merchantFilter: ['grubhub', 'cheesecake factory', 'goldbelly', 'wine.com', 'milk bar', 'shake shack'], amount: 10, frequency: 'monthly', type: 'credit' },
+      { id: 'ag-uber', name: 'Uber Cash', merchantFilter: ['uber', 'uber eats'], amount: 10, frequency: 'monthly', type: 'credit' },
+      { id: 'ag-resy', name: 'Resy Credit', merchantFilter: ['resy'], amount: 50, frequency: 'quarterly', type: 'credit' },
+      { id: 'ag-dunkin', name: 'Dunkin Credit', merchantFilter: ['dunkin'], amount: 7, frequency: 'monthly', type: 'credit' },
+    ],
+  },
+  {
+    id: 'chase-csr',
+    name: 'Sapphire Reserve',
+    issuer: 'Chase',
+    annualFee: 550,
+    imageColor: 'bg-blue-800',
+    baseBonusCategories: [
+      { id: 'csr-travel', name: 'Travel', multiplier: 3.0, currency: 'UR' },
+      { id: 'csr-dining', name: 'Dining', multiplier: 3.0, currency: 'UR' },
+      { id: 'csr-portal-hotels', name: 'Chase Hotels', multiplier: 10.0, currency: 'UR' },
+      { id: 'csr-base', name: 'Other', multiplier: 1.0, currency: 'UR' },
+    ],
+    benefits: [
+      { id: 'csr-travel-credit', name: 'Travel Credit', merchantFilter: ['travel', 'hotel', 'airline', 'uber', 'lyft', 'taxi', 'train', 'parking'], amount: 300, frequency: 'annually', type: 'credit' },
+      { id: 'csr-instacart', name: 'Instacart Credit', merchantFilter: ['instacart'], amount: 15, frequency: 'monthly', type: 'credit' },
+      { id: 'csr-door-dash', name: 'DoorDash Credit', merchantFilter: ['doordash'], amount: 5, frequency: 'monthly', type: 'credit' },
+    ],
+  },
+  {
+    id: 'chase-csp',
+    name: 'Sapphire Preferred',
+    issuer: 'Chase',
+    annualFee: 95,
+    imageColor: 'bg-blue-600',
+    baseBonusCategories: [
+      { id: 'csp-travel', name: 'Travel', multiplier: 2.0, currency: 'UR' },
+      { id: 'csp-dining', name: 'Dining', multiplier: 3.0, currency: 'UR' },
+      { id: 'csp-streaming', name: 'Streaming', multiplier: 3.0, currency: 'UR' },
+      { id: 'csp-grocery-online', name: 'Online Grocery', multiplier: 3.0, currency: 'UR' },
+      { id: 'csp-base', name: 'Other', multiplier: 1.0, currency: 'UR' },
+    ],
+    benefits: [
+      { id: 'csp-hotel-credit', name: 'Hotel Credit', merchantFilter: ['hotel', 'chase travel'], amount: 50, frequency: 'annually', type: 'credit' },
+    ],
+  },
+  {
+    id: 'chase-cfu',
+    name: 'Freedom Unlimited',
+    issuer: 'Chase',
+    annualFee: 0,
+    imageColor: 'bg-blue-400',
+    baseBonusCategories: [
+      { id: 'cfu-travel', name: 'Chase Hotels', multiplier: 5.0, currency: 'UR' },
+      { id: 'cfu-dining', name: 'Dining', multiplier: 3.0, currency: 'UR' },
+      { id: 'cfu-drugstore', name: 'Drugstore', multiplier: 3.0, currency: 'UR' },
+      { id: 'cfu-lyft', name: 'Lyft', multiplier: 2.0, currency: 'UR' },
+      { id: 'cfu-base', name: 'Other', multiplier: 1.5, currency: 'UR' },
+    ],
+    benefits: [],
+  },
+];
+
+export const sampleOffers: UserOffer[] = [
+  {
+    id: 'offer-zwilling',
+    cardId: 'amex-plat',
+    merchantName: 'Zwilling',
+    offerType: 'spend_X_get_Y',
+    minSpend: 250,
+    fixedReward: 50,
+    expirationDate: '2026-12-31',
+  },
+  {
+    id: 'offer-lululemon',
+    cardId: 'chase-csr',
+    merchantName: 'Lululemon',
+    offerType: 'spend_X_get_Y',
+    minSpend: 100,
+    fixedReward: 20,
+    expirationDate: '2026-06-30',
+  },
+  {
+    id: 'offer-starbucks',
+    cardId: 'amex-gold',
+    merchantName: 'Starbucks',
+    offerType: 'percent_back',
+    percentBack: 10,
+    maxReward: 5,
+    expirationDate: '2026-08-15',
+  },
+  {
+    id: 'offer-bestbuy',
+    cardId: 'chase-csp',
+    merchantName: 'Best Buy',
+    offerType: 'percent_back',
+    percentBack: 5,
+    maxReward: 25,
+    expirationDate: '2026-05-20',
+  },
+];
