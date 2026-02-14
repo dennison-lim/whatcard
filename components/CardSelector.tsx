@@ -92,4 +92,4 @@ const CardSelector: React.FC<CardSelectorProps> = ({ cards, activeCardIds, onTog
   );
 };
 
-export default CardSelector;
+export default React.memo(CardSelector);

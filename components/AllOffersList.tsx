@@ -86,4 +86,4 @@ const AllOffersList: React.FC<AllOffersListProps> = ({ offers, cards, onDeleteOf
   );
 };
 
-export default AllOffersList;
+export default React.memo(AllOffersList);

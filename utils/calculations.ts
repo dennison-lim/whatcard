@@ -46,8 +46,7 @@ export function calculateBestCards(
         benefitDetails: breakdown.benefitDetails,
         offerDetails: offerDetails.map(d => ({
           ...d,
-          // Re-calculate basic value for history display if not explicitly provided by logic
-          usedAmount: breakdown.offers / meta.matchedOfferIds.length 
+          usedAmount: meta.matchedOfferIds.length > 0 ? breakdown.offers / meta.matchedOfferIds.length : 0
         }))
       }
     };

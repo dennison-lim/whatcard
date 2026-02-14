@@ -1,5 +1,4 @@
-// Simple client-side mapping for instant feedback
-// In a real app, this could be backed by the Gemini API or a larger database
+// Client-side keyword mapping for merchant → category and benefit icons
 
 export const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'Dining': ['chipotle', 'starbucks', 'mcdonald', 'burger', 'grill', 'cafe', 'coffee', 'bistro', 'steak', 'pizza', 'sushi', 'taco', 'eats', 'grubhub', 'doordash', 'resy', 'sweetgreen', 'shake shack', 'dunkin'],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { guessCategory, getBenefitIcon } from '../utils/merchantUtils';
 import { CreditCard } from '../types';
 
@@ -12,7 +12,6 @@ interface InputSectionProps {
   selectedBenefit: string;
   setSelectedBenefit: (val: string) => void;
   onCalculate: () => void;
-  isLoading: boolean;
   isAutoCategorized: boolean;
   setIsAutoCategorized: (val: boolean) => void;
   cards: CreditCard[];
@@ -31,12 +30,12 @@ const CATEGORIES = [
   { id: 'Other', label: 'Other', icon: '💳' },
 ];
 
-const InputSection: React.FC<InputSectionProps> = ({ 
-    merchant, setMerchant, amount, setAmount, category, setCategory, 
-    selectedBenefit, setSelectedBenefit, onCalculate, 
-    isLoading, isAutoCategorized, setIsAutoCategorized, cards, activeCardIds, benefitBalances
+const InputSection: React.FC<InputSectionProps> = ({
+    merchant, setMerchant, amount, setAmount, category, setCategory,
+    selectedBenefit, setSelectedBenefit, onCalculate,
+    isAutoCategorized, setIsAutoCategorized, cards, activeCardIds, benefitBalances
 }) => {
-  
+
   useEffect(() => {
     if (!merchant) {
       setIsAutoCategorized(false);
@@ -93,7 +92,7 @@ const InputSection: React.FC<InputSectionProps> = ({
   return (
     <div className="bg-neutral-900 rounded-[2.5rem] p-8 border border-white/5 relative shadow-2xl overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600 to-indigo-600" />
-      
+
       <form onSubmit={(e) => {e.preventDefault(); onCalculate();}} className="space-y-10">
         {/* Amount Input */}
         <div className="flex flex-col items-center">
@@ -157,7 +156,7 @@ const InputSection: React.FC<InputSectionProps> = ({
             <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 px-1">
                 Active Perks <span className="font-bold text-neutral-700 normal-case ml-1">(Override)</span>
             </label>
-            
+
             {groupedBenefits.length > 0 ? (
                 <div className="space-y-6">
                     {groupedBenefits.map(cardGroup => (
@@ -191,7 +190,7 @@ const InputSection: React.FC<InputSectionProps> = ({
             ) : (
                 <p className="text-[10px] text-neutral-600 italic px-1">No applicable perks active in wallet.</p>
             )}
-            
+
             {selectedBenefitSummary && (
                 <div className="mt-8 animate-fade-in pt-4 border-t border-white/5">
                     <div className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-3xl p-5 border border-white/10 flex items-center justify-between">
@@ -216,18 +215,14 @@ const InputSection: React.FC<InputSectionProps> = ({
         </div>
 
         <button
-          type="submit" disabled={isLoading}
-          className={`w-full py-5 rounded-[1.5rem] font-black text-white shadow-2xl transition-all active:scale-95 uppercase tracking-widest text-sm ${
-            isLoading 
-            ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-            : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'
-          }`}
+          type="submit"
+          className="w-full py-5 rounded-[1.5rem] font-black text-white shadow-2xl transition-all active:scale-95 uppercase tracking-widest text-sm bg-blue-600 hover:bg-blue-500 shadow-blue-500/30"
         >
-          {isLoading ? 'Crunching...' : 'Optimize This Spend'}
+          Optimize This Spend
         </button>
       </form>
     </div>
   );
 };
 
-export default InputSection;
+export default React.memo(InputSection);

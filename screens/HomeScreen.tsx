@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import InputSection from '../components/InputSection';
 import RecommendationCard from '../components/RecommendationCard';
 import CardSelector from '../components/CardSelector';
@@ -60,7 +60,6 @@ const HomeScreen: React.FC = () => {
   const [isAutoCategorized, setIsAutoCategorized] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState('');
   const [results, setResults] = useState<RecommendationResult[] | null>(null);
-  const [loading, setLoading] = useState(false);
   const [activeOffers, setActiveOffers] = useState<UserOffer[]>(hydrated.activeOffers);
   const [transactionHistory, setTransactionHistory] = useState<TransactionRecord[]>(hydrated.transactionHistory);
 
@@ -94,46 +93,42 @@ const HomeScreen: React.FC = () => {
   const [editingOffer, setEditingOffer] = useState<UserOffer | null>(null);
   const [selectedWalletCardId, setSelectedWalletCardId] = useState<string | null>(null);
 
-  const validOffers = activeOffers.filter(offer => {
+  const validOffers = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return activeOffers.filter(offer => {
       if (offer.isUsed) return false;
-      if (!activeCardIds.includes(offer.cardId)) return false; // Only show offers for active cards
+      if (!activeCardIds.includes(offer.cardId)) return false;
       if (!offer.expirationDate) return true;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       const exp = new Date(offer.expirationDate);
       return exp >= today;
-  });
+    });
+  }, [activeOffers, activeCardIds]);
 
-  const handleCalculate = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const amountFloat = parseFloat(amount) || 0;
-      // Filter cards to only those selected in the wallet
-      const filteredCards = cards.filter(c => activeCardIds.includes(c.id));
-      
-      const rankedResults = calculateBestCards(
-          filteredCards, 
-          validOffers, 
-          merchant, 
-          amountFloat, 
-          category, 
-          benefitBalances,
-          selectedBenefit
-      );
-      setResults(rankedResults);
-      setLoading(false);
-    }, 400);
-  };
+  const handleCalculate = useCallback(() => {
+    const amountFloat = parseFloat(amount) || 0;
+    const filteredCards = cards.filter(c => activeCardIds.includes(c.id));
 
-  const handleUseCard = (result: RecommendationResult) => {
+    const rankedResults = calculateBestCards(
+        filteredCards,
+        validOffers,
+        merchant,
+        amountFloat,
+        category,
+        benefitBalances,
+        selectedBenefit
+    );
+    setResults(rankedResults);
+  }, [amount, cards, activeCardIds, validOffers, merchant, category, benefitBalances, selectedBenefit]);
+
+  const handleUseCard = useCallback((result: RecommendationResult) => {
       const currentFee = annualFeeBalances[result.card.id] ?? (customAnnualFees[result.card.id] ?? result.card.annualFee);
-      
+
       const cashIncentiveValue = result.breakdown.benefitsValue + result.breakdown.offersValue;
       const newFee = currentFee - cashIncentiveValue;
-      
+
       setAnnualFeeBalances(prev => ({ ...prev, [result.card.id]: newFee }));
 
-      // Build Offset Details for history
       const offsetDetails: TransactionOffsetDetail[] = [];
       result.breakdown.benefitDetails.forEach(bd => {
           const benefit = result.card.benefits.find(b => b.id === bd.benefitId);
@@ -145,7 +140,6 @@ const HomeScreen: React.FC = () => {
           offsetDetails.push({ name: od.offerName, type: 'offer', value: od.usedAmount });
       });
 
-      // Track History
       const newRecord: TransactionRecord = {
           id: `tx-${Date.now()}`,
           cardId: result.card.id,
@@ -159,7 +153,7 @@ const HomeScreen: React.FC = () => {
 
       const offersUsedIds = result.breakdown.matchedOfferIds;
       if (offersUsedIds.length > 0) {
-          setActiveOffers(prev => prev.map(o => 
+          setActiveOffers(prev => prev.map(o =>
              offersUsedIds.includes(o.id) ? { ...o, isUsed: true } : o
           ));
       }
@@ -178,9 +172,9 @@ const HomeScreen: React.FC = () => {
       setAmount('');
       setMerchant('');
       setResults(null);
-  };
+  }, [annualFeeBalances, customAnnualFees, merchant, amount]);
 
-  const handleSelectBenefit = (benefitName: string) => {
+  const handleSelectBenefit = useCallback((benefitName: string) => {
       if (selectedBenefit === benefitName) {
           setSelectedBenefit('');
       } else {
@@ -189,42 +183,42 @@ const HomeScreen: React.FC = () => {
           setCategory(mappedCategory);
           setIsAutoCategorized(true);
       }
-  };
+  }, [selectedBenefit]);
 
-  const handleToggleActiveCard = (cardId: string) => {
-    setActiveCardIds(prev => 
-      prev.includes(cardId) 
-        ? prev.filter(id => id !== cardId) 
+  const handleToggleActiveCard = useCallback((cardId: string) => {
+    setActiveCardIds(prev =>
+      prev.includes(cardId)
+        ? prev.filter(id => id !== cardId)
         : [...prev, cardId]
     );
-  };
+  }, []);
 
-  const handleAddOffer = (offer: UserOffer) => {
+  const handleAddOffer = useCallback((offer: UserOffer) => {
     setActiveOffers(prev => [...prev, offer]);
     setShowAddOffer(false);
-  };
+  }, []);
 
-  const handleUpdateOffer = (updatedOffer: UserOffer) => {
+  const handleUpdateOffer = useCallback((updatedOffer: UserOffer) => {
       setActiveOffers(prev => prev.map(o => o.id === updatedOffer.id ? updatedOffer : o));
       setShowAddOffer(false);
       setEditingOffer(null);
-  };
+  }, []);
 
-  const handleDeleteOffer = (offerId: string) => {
+  const handleDeleteOffer = useCallback((offerId: string) => {
     setActiveOffers(prev => prev.filter(o => o.id !== offerId));
-  };
-  
-  const handleMarkOfferUsed = (offerId: string) => {
-      setActiveOffers(prev => prev.map(o => o.id === offerId ? { ...o, isUsed: true } : o));
-  };
+  }, []);
 
-  const handleUpdateFee = (cardId: string, newBalance: number, newDate: string, totalFee: number) => {
+  const handleMarkOfferUsed = useCallback((offerId: string) => {
+      setActiveOffers(prev => prev.map(o => o.id === offerId ? { ...o, isUsed: true } : o));
+  }, []);
+
+  const handleUpdateFee = useCallback((cardId: string, newBalance: number, newDate: string, totalFee: number) => {
       setAnnualFeeBalances(prev => ({ ...prev, [cardId]: newBalance }));
       setAnnualFeeDates(prev => ({ ...prev, [cardId]: newDate }));
       setCustomAnnualFees(prev => ({ ...prev, [cardId]: totalFee }));
-  };
+  }, []);
 
-  const handleAddBenefit = (cardId: string, benefit: CardBenefit) => {
+  const handleAddBenefit = useCallback((cardId: string, benefit: CardBenefit) => {
     setCards(prevCards => prevCards.map(c => {
         if (c.id === cardId) {
             return { ...c, benefits: [...c.benefits, benefit] };
@@ -232,22 +226,22 @@ const HomeScreen: React.FC = () => {
         return c;
     }));
     setBenefitBalances(prev => ({ ...prev, [benefit.id]: benefit.amount }));
-  };
+  }, []);
 
-  const handleUpdateBenefit = (cardId: string, updatedBenefit: CardBenefit) => {
+  const handleUpdateBenefit = useCallback((cardId: string, updatedBenefit: CardBenefit) => {
       setCards(prevCards => prevCards.map(c => {
           if (c.id === cardId) {
-              return { 
-                  ...c, 
+              return {
+                  ...c,
                   benefits: c.benefits.map(b => b.id === updatedBenefit.id ? updatedBenefit : b)
               };
           }
           return c;
       }));
       setBenefitBalances(prev => ({ ...prev, [updatedBenefit.id]: updatedBenefit.amount }));
-  };
+  }, []);
 
-  const handleDeleteBenefit = (cardId: string, benefitId: string) => {
+  const handleDeleteBenefit = useCallback((cardId: string, benefitId: string) => {
       setCards(prevCards => prevCards.map(c => {
           if (c.id === cardId) {
               return { ...c, benefits: c.benefits.filter(b => b.id !== benefitId) };
@@ -259,21 +253,25 @@ const HomeScreen: React.FC = () => {
           delete next[benefitId];
           return next;
       });
-  };
+  }, []);
 
-  const handleUpdateBenefitBalance = (benefitId: string, newAmount: number) => {
+  const handleUpdateBenefitBalance = useCallback((benefitId: string, newAmount: number) => {
     setBenefitBalances(prev => ({ ...prev, [benefitId]: newAmount }));
-  };
+  }, []);
 
-  const handleResetToFreshState = () => {
+  const handleResetToFreshState = useCallback(() => {
     if (typeof window === 'undefined') return;
     if (!window.confirm('Clear all saved data and reset to fresh state with mock data? This cannot be undone.')) return;
     clearStoredState();
     window.location.reload();
-  };
+  }, []);
 
   const selectedWalletCard = cards.find(c => c.id === selectedWalletCardId);
-  const selectedWalletCardOffers = activeOffers.filter(o => o.cardId === selectedWalletCardId);
+
+  const selectedWalletCardOffers = useMemo(
+    () => activeOffers.filter(o => o.cardId === selectedWalletCardId),
+    [activeOffers, selectedWalletCardId]
+  );
 
   return (
     <div className="min-h-screen bg-black text-white pb-32 safe-bottom">
@@ -296,7 +294,7 @@ const HomeScreen: React.FC = () => {
             >
               Reset data
             </button>
-            <button 
+            <button
               onClick={() => {
                 setEditingOffer(null);
                 setShowAddOffer(!showAddOffer);
@@ -315,8 +313,8 @@ const HomeScreen: React.FC = () => {
              <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">My Wallet</h2>
              <span className="text-[10px] font-bold text-neutral-400 bg-neutral-900 border border-white/5 px-3 py-1 rounded-full">{activeCardIds.length} Active / {cards.length} Total</span>
           </div>
-          <CardSelector 
-            cards={cards} 
+          <CardSelector
+            cards={cards}
             activeCardIds={activeCardIds}
             onToggleActive={handleToggleActiveCard}
             onOpenDetails={(id) => setSelectedWalletCardId(id)}
@@ -326,7 +324,7 @@ const HomeScreen: React.FC = () => {
 
         {showAddOffer && (
           <section className="animate-slide-up">
-             <OfferInput 
+             <OfferInput
                cards={cards}
                initialOffer={editingOffer}
                onAddOffer={handleAddOffer}
@@ -339,7 +337,7 @@ const HomeScreen: React.FC = () => {
           </section>
         )}
 
-        <BenefitsList 
+        <BenefitsList
             cards={cards}
             activeCardIds={activeCardIds}
             balances={benefitBalances}
@@ -348,23 +346,22 @@ const HomeScreen: React.FC = () => {
             onUpdateBalance={handleUpdateBenefitBalance}
         />
 
-        <AllOffersList 
-          offers={validOffers} 
-          cards={cards} 
-          onDeleteOffer={handleDeleteOffer} 
+        <AllOffersList
+          offers={validOffers}
+          cards={cards}
+          onDeleteOffer={handleDeleteOffer}
           onMarkUsed={handleMarkOfferUsed}
           onEditOffer={(o) => {setEditingOffer(o); setShowAddOffer(true);}}
           onSelectOffer={(o) => {setMerchant(o.merchantName); setAmount(o.minSpend?.toString() || '');}}
         />
 
         <section>
-          <InputSection 
+          <InputSection
             merchant={merchant} setMerchant={setMerchant}
             amount={amount} setAmount={setAmount}
             category={category} setCategory={setCategory}
             selectedBenefit={selectedBenefit} setSelectedBenefit={handleSelectBenefit}
-            onCalculate={handleCalculate} 
-            isLoading={loading}
+            onCalculate={handleCalculate}
             isAutoCategorized={isAutoCategorized} setIsAutoCategorized={setIsAutoCategorized}
             cards={cards} activeCardIds={activeCardIds} benefitBalances={benefitBalances}
           />
@@ -378,10 +375,10 @@ const HomeScreen: React.FC = () => {
             </div>
             <div className="space-y-6">
               {results.map((result, index) => (
-                <RecommendationCard 
+                <RecommendationCard
                   key={result.card.id}
-                  result={result} 
-                  rank={index + 1} 
+                  result={result}
+                  rank={index + 1}
                   onUseBenefit={() => {}}
                   onUseOffer={handleMarkOfferUsed}
                   onUseCard={() => handleUseCard(result)}
@@ -392,7 +389,7 @@ const HomeScreen: React.FC = () => {
         )}
 
         {selectedWalletCard && (
-            <CardDetailsModal 
+            <CardDetailsModal
                 key={selectedWalletCard.id}
                 card={selectedWalletCard}
                 offers={selectedWalletCardOffers}

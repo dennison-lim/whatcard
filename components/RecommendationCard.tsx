@@ -93,4 +93,4 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ result, rank, o
   );
 };
 
-export default RecommendationCard;
+export default React.memo(RecommendationCard);

@@ -1,34 +1,35 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # WhatCard
 
-Choose the best credit card for each purchase. Run locally or deploy to Vercel.
+**WhatCard** helps you choose the best credit card for a given transaction by combining three factors:
 
-View your app in AI Studio: https://ai.studio/apps/drive/193fbMCVTjebCTg0z9WVpf6DDSeoJlEkf
+1. **Point valuations** — Category multipliers (e.g. 3x Dining, 5x Flights) are converted to dollar value using fixed point valuations (MR, UR).
+2. **Perks and benefits** — Statement credits (Uber Cash, Saks, travel credits, etc.) that match the merchant are included, using your current benefit balances.
+3. **Current offers** — Card-linked offers (spend $X get $Y, or % back) that apply to the merchant are stacked into the total value.
 
-## Run Locally
+You enter a merchant and amount, pick a category (or pin a benefit), and get a ranked list of cards by total value. “Use This Card” applies the chosen card’s benefits/offers and updates balances and history. All data is stored in your browser (localStorage); no backend required.
+
+---
+
+## Run locally
 
 **Prerequisites:** Node.js
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. (Optional) Copy [.env.example](.env.example) to `.env` or `.env.local` and set `GEMINI_API_KEY` if you want to use Gemini-based categorization. The app runs without it.
-3. Run the app:
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000).
+```bash
+npm install
+npm run dev
+```
 
-## Deploy to GitHub and Vercel
+Open [http://localhost:3000](http://localhost:3000).
 
-- **GitHub:** Push this repo to a GitHub repository. Ensure [.gitignore](.gitignore) is in place so `node_modules/`, `dist/`, and `.env` (or `.env.local`) are not committed.
+---
 
-- **Vercel:**
-  1. Import the project from GitHub in [Vercel](https://vercel.com).
-  2. Build command: `npm run build` (default for Vite). Output directory: `dist`.
-  3. (Optional) If you use Gemini, add `GEMINI_API_KEY` in the project's Environment Variables.
-  4. Deploy. The app is a static SPA; data is stored in the browser via localStorage (no database required).
+## Deploy to Vercel
+
+1. Push the repo to GitHub. Ensure [.gitignore](.gitignore) is in place so `node_modules/`, `dist/`, and `.env` are not committed.
+2. In [Vercel](https://vercel.com), import the project from GitHub.
+3. Build command: `npm run build`. Output directory: `dist`.
+4. Deploy. The app is a static SPA; data lives in the browser via localStorage.
+
+---
+
+**Technical documentation** (architecture, design, file map): [docs/TECHNICAL.md](docs/TECHNICAL.md).

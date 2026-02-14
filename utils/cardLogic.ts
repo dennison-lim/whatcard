@@ -1,4 +1,4 @@
-import { CreditCard, UserOffer, BenefitUsage, CardBenefit, Currency } from '../types';
+import { CreditCard, UserOffer } from '../types';
 
 export interface CardValueResult {
   totalValue: number;

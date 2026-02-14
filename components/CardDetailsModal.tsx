@@ -230,7 +230,7 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
                         </div>
                         <div>
                             <label className="block text-[10px] font-black text-neutral-500 uppercase mb-2 ml-1">Renewal Frequency</label>
-                            <select value={formFrequency} onChange={e => setFormFrequency(e.target.value as any)} className="w-full p-4 bg-neutral-900 border border-white/10 rounded-2xl text-sm font-black text-white outline-none">
+                            <select value={formFrequency} onChange={e => setFormFrequency(e.target.value as 'monthly' | 'annually' | 'quarterly' | 'once')} className="w-full p-4 bg-neutral-900 border border-white/10 rounded-2xl text-sm font-black text-white outline-none">
                                 <option value="monthly">Monthly</option>
                                 <option value="annually">Annually</option>
                                 <option value="quarterly">Quarterly</option>

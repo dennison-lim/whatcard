@@ -15,7 +15,7 @@ const BenefitsList: React.FC<BenefitsListProps> = ({ cards, activeCardIds, balan
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempAmount, setTempAmount] = useState('');
 
-  const handleEditClick = (benefit: any, currentBalance: number) => {
+  const handleEditClick = (benefit: CardBenefit, currentBalance: number) => {
     setEditingId(benefit.id);
     setTempAmount(currentBalance.toString());
   };
@@ -134,4 +134,4 @@ const BenefitsList: React.FC<BenefitsListProps> = ({ cards, activeCardIds, balan
   );
 };
 
-export default BenefitsList;
+export default React.memo(BenefitsList);

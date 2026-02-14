@@ -1,5 +1,5 @@
 {
   "name": "WhatCard",
-  "description": "An intelligent assistant to help you choose the best credit card for every purchase based on rewards, benefits, and active offers.",
+  "description": "Choose the best credit card for each transaction using point valuations, perks/benefits, and current offers.",
   "requestFramePermissions": []
 }
