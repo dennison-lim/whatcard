@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis } from '../../../_redis';
+import { redis } from '../../../redis';
 import { allCards } from '../../../../data';
 import type { PersistedState } from '../../../../utils/storage';
 
