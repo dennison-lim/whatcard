@@ -1,37 +1,33 @@
 import { Redis } from '@upstash/redis';
 
-let _redis: Redis | null = null;
-
-export function getRedis(): Redis {
-  if (_redis) return _redis;
-  
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+/**
+ * Creates a Redis client using the best available environment variables.
+ * Vercel KV (legacy) used KV_REST_API_*, while Upstash uses UPSTASH_REDIS_REST_*.
+ */
+export function getRedisClient() {
+  // Try to use fromEnv() first as it's optimized for Vercel/Upstash
+  // but we provide explicit fallbacks to ensure it works regardless of which 
+  // env var naming convention is active in project settings.
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
   if (!url || !token) {
-    const errorMsg = 'Missing Redis environment variables. Ensure KV_REST_API_URL and KV_REST_API_TOKEN are set.';
-    console.error('[Redis Config] Error:', errorMsg);
-    throw new Error(errorMsg);
+    console.error('[Redis] Missing credentials. URL exists:', !!url, 'Token exists:', !!token);
+    throw new Error('Redis credentials missing. Please check Vercel environment variables.');
   }
 
   try {
-    _redis = new Redis({
+    return new Redis({
       url,
       token,
+      // In some serverless environments, retry strategy helps with cold starts
+      retry: {
+        retries: 3,
+        backoff: (retryCount) => Math.exp(retryCount) * 50,
+      },
     });
-    console.log('[Redis Config] Redis client initialized');
-    return _redis;
   } catch (err) {
-    console.error('[Redis Config] Initialization failed:', err);
+    console.error('[Redis] Initialization error:', err);
     throw err;
   }
 }
-
-// Still export the proxy but make it more transparent
-export const redis = new Proxy({} as Redis, {
-  get(target, prop) {
-    const instance = getRedis();
-    const value = (instance as any)[prop];
-    return typeof value === 'function' ? value.bind(instance) : value;
-  },
-});
