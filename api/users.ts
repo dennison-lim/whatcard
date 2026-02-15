@@ -3,11 +3,24 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { AppUser } from '../types';
 import { generateSeedState } from '../utils/seedData';
 
+const REDIS_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+
 function toMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Internal server error';
 }
 
+function missingRedisEnv(): boolean {
+  return !REDIS_URL || !REDIS_TOKEN;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (missingRedisEnv()) {
+    return res.status(503).json({
+      error: 'Service unavailable',
+      message: 'Missing Redis env: set KV_REST_API_URL and KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN) in Vercel project settings.',
+    });
+  }
   try {
     const { redis } = await import('../lib/redis');
     return await handle(req, res, redis);

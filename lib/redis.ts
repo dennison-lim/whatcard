@@ -1,10 +1,9 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/node';
 
 let _redis: Redis | null = null;
 
 function getRedis(): Redis {
   if (_redis) return _redis;
-  // Support both Vercel KV and Upstash dashboard env var names
   const url =
     process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
   const token =
@@ -14,7 +13,8 @@ function getRedis(): Redis {
       'Missing Redis env: set KV_REST_API_URL and KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN) in Vercel project settings.'
     );
   }
-  _redis = new Redis({ url, token });
+  // Use fromEnv() for Vercel compatibility (reads KV_* and UPSTASH_*)
+  _redis = Redis.fromEnv();
   return _redis;
 }
 
