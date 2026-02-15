@@ -21,12 +21,14 @@ interface CardDetailsModalProps {
   onDeleteOffer: (offerId: string) => void;
   onUpdateOffer: (offer: UserOffer) => void;
   onMarkOfferUsed: (offerId: string) => void;
+  onDeleteTransaction?: (txId: string) => void;
 }
 
 const CardDetailsModal: React.FC<CardDetailsModalProps> = ({ 
     card, offers, onClose, benefitBalances, annualFeeBalance,
-    totalAnnualFee, lastFeeDate, transactionHistory, onUpdateFee, onAddBenefit, 
-    onUpdateBenefit, onDeleteBenefit, onAddOffer, onDeleteOffer, onUpdateOffer, onMarkOfferUsed, onUseBenefit
+    totalAnnualFee, lastFeeDate, transactionHistory, onUpdateFee, onAddBenefit,
+    onUpdateBenefit, onDeleteBenefit, onAddOffer, onDeleteOffer, onUpdateOffer, onMarkOfferUsed, onUseBenefit,
+    onDeleteTransaction
 }) => {
   const [isEditingFee, setIsEditingFee] = useState(false);
   const [tempFee, setTempFee] = useState(annualFeeBalance.toString());
@@ -348,11 +350,22 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
                             {new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-lg font-black text-green-400">
-                            +${tx.feeOffset.toFixed(2)}
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-lg font-black text-green-400">
+                              +${tx.feeOffset.toFixed(2)}
+                            </div>
+                            <div className="text-[9px] font-black text-neutral-600 uppercase">Total Offset</div>
                           </div>
-                          <div className="text-[9px] font-black text-neutral-600 uppercase">Total Offset</div>
+                          {onDeleteTransaction && (
+                            <button
+                              onClick={() => { if (window.confirm('Delete this transaction and reverse balance changes?')) onDeleteTransaction(tx.id); }}
+                              className="p-2 text-neutral-600 hover:text-red-400 bg-white/5 rounded-xl transition-colors"
+                              title="Delete & reverse"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                            </button>
+                          )}
                         </div>
                       </div>
 

@@ -4,75 +4,94 @@ import RecommendationCard from '../components/RecommendationCard';
 import CardSelector from '../components/CardSelector';
 import OfferInput from '../components/OfferInput';
 import CardDetailsModal from '../components/CardDetailsModal';
-import AllOffersList from '../components/AllOffersList';
-import BenefitsList from '../components/BenefitsList';
-import { allCards as initialCards, sampleOffers } from '../data';
+import PerksBadges from '../components/PerksBadges';
+import OffersBadges from '../components/OffersBadges';
 import { calculateBestCards } from '../utils/calculations';
-import { getStoredState, setStoredState, clearStoredState, type PersistedState } from '../utils/storage';
+import { getDefaultPersistedState, mergeWithDefaults, generateSeedState } from '../utils/seedData';
+import type { PersistedState } from '../utils/storage';
+import api from '../services/api';
 import { RecommendationResult, UserOffer, CreditCard, CardBenefit, TransactionRecord, TransactionOffsetDetail } from '../types';
 import { getCategoryForBenefit } from '../utils/merchantUtils';
 
-function getDefaultPersistedState(): PersistedState {
-  const defaultBenefitBalances: Record<string, number> = {};
-  initialCards.forEach(card => card.benefits.forEach(b => { defaultBenefitBalances[b.id] = b.amount; }));
-  const defaultFeeBalances: Record<string, number> = {};
-  initialCards.forEach(c => defaultFeeBalances[c.id] = c.annualFee);
-  const mockDate = new Date();
-  mockDate.setMonth(mockDate.getMonth() - 2);
-  const dateStr = mockDate.toISOString().split('T')[0];
-  const defaultFeeDates: Record<string, string> = {};
-  initialCards.forEach(c => defaultFeeDates[c.id] = dateStr);
-  return {
-    cards: initialCards,
-    activeCardIds: initialCards.map(c => c.id),
-    activeOffers: sampleOffers,
-    transactionHistory: [] as TransactionRecord[],
-    benefitBalances: defaultBenefitBalances,
-    customAnnualFees: {} as Record<string, number>,
-    annualFeeBalances: defaultFeeBalances,
-    annualFeeDates: defaultFeeDates,
-  };
+interface HomeScreenProps {
+  userId: string;
+  onLogout: () => void;
 }
 
-/** Merge stored state with defaults so new cards/benefits from data.ts get default balances/dates. */
-function mergeWithDefaults(stored: PersistedState): PersistedState {
-  const defaults = getDefaultPersistedState();
-  return {
-    ...stored,
-    benefitBalances: { ...defaults.benefitBalances, ...stored.benefitBalances },
-    annualFeeBalances: { ...defaults.annualFeeBalances, ...stored.annualFeeBalances },
-    annualFeeDates: { ...defaults.annualFeeDates, ...stored.annualFeeDates },
-  };
-}
+const HomeScreen: React.FC<HomeScreenProps> = ({ userId, onLogout }) => {
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [saveError, setSaveError] = useState(false);
 
-const HomeScreen: React.FC = () => {
-  const [hydrated] = useState(() => {
-    const stored = getStoredState();
-    if (stored) return mergeWithDefaults(stored);
-    return getDefaultPersistedState();
-  });
-
-  const [cards, setCards] = useState<CreditCard[]>(hydrated.cards);
-  const [activeCardIds, setActiveCardIds] = useState<string[]>(hydrated.activeCardIds);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [activeCardIds, setActiveCardIds] = useState<string[]>([]);
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Dining');
   const [isAutoCategorized, setIsAutoCategorized] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState('');
   const [results, setResults] = useState<RecommendationResult[] | null>(null);
-  const [activeOffers, setActiveOffers] = useState<UserOffer[]>(hydrated.activeOffers);
-  const [transactionHistory, setTransactionHistory] = useState<TransactionRecord[]>(hydrated.transactionHistory);
+  const [activeOffers, setActiveOffers] = useState<UserOffer[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<TransactionRecord[]>([]);
 
-  const [benefitBalances, setBenefitBalances] = useState<Record<string, number>>(hydrated.benefitBalances);
-  const [customAnnualFees, setCustomAnnualFees] = useState<Record<string, number>>(hydrated.customAnnualFees);
-  const [annualFeeBalances, setAnnualFeeBalances] = useState<Record<string, number>>(hydrated.annualFeeBalances);
-  const [annualFeeDates, setAnnualFeeDates] = useState<Record<string, string>>(hydrated.annualFeeDates);
+  const [benefitBalances, setBenefitBalances] = useState<Record<string, number>>({});
+  const [customAnnualFees, setCustomAnnualFees] = useState<Record<string, number>>({});
+  const [annualFeeBalances, setAnnualFeeBalances] = useState<Record<string, number>>({});
+  const [annualFeeDates, setAnnualFeeDates] = useState<Record<string, string>>({});
 
+  // Track if we've loaded initial state (to avoid saving before load completes)
+  const loadedRef = useRef(false);
+
+  // Load state from API on mount
+  useEffect(() => {
+    loadedRef.current = false;
+    setLoading(true);
+
+    const load = async () => {
+      try {
+        // Fetch user name
+        const users = await api.getUsers();
+        const user = users.find(u => u.id === userId);
+        if (user) setUserName(user.name);
+
+        // Fetch user state
+        const raw = await api.getUserState(userId);
+        const state = mergeWithDefaults(raw);
+        setCards(state.cards);
+        setActiveCardIds(state.activeCardIds);
+        setActiveOffers(state.activeOffers);
+        setTransactionHistory(state.transactionHistory);
+        setBenefitBalances(state.benefitBalances);
+        setCustomAnnualFees(state.customAnnualFees);
+        setAnnualFeeBalances(state.annualFeeBalances);
+        setAnnualFeeDates(state.annualFeeDates);
+      } catch {
+        // If state not found, apply defaults
+        const defaults = getDefaultPersistedState();
+        setCards(defaults.cards);
+        setActiveCardIds(defaults.activeCardIds);
+        setActiveOffers(defaults.activeOffers);
+        setTransactionHistory(defaults.transactionHistory);
+        setBenefitBalances(defaults.benefitBalances);
+        setCustomAnnualFees(defaults.customAnnualFees);
+        setAnnualFeeBalances(defaults.annualFeeBalances);
+        setAnnualFeeDates(defaults.annualFeeDates);
+      } finally {
+        setLoading(false);
+        // Small delay to let state settle before enabling persistence
+        setTimeout(() => { loadedRef.current = true; }, 100);
+      }
+    };
+    load();
+  }, [userId]);
+
+  // Debounced save to API (replaces localStorage persistence)
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (!loadedRef.current) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
-      setStoredState({
+      api.saveUserState(userId, {
         cards,
         activeCardIds,
         activeOffers,
@@ -81,17 +100,19 @@ const HomeScreen: React.FC = () => {
         customAnnualFees,
         annualFeeBalances,
         annualFeeDates,
-      });
+      }).then(() => setSaveError(false))
+        .catch(() => setSaveError(true));
       persistTimeoutRef.current = null;
     }, 400);
     return () => {
       if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     };
-  }, [cards, activeCardIds, activeOffers, transactionHistory, benefitBalances, customAnnualFees, annualFeeBalances, annualFeeDates]);
+  }, [userId, cards, activeCardIds, activeOffers, transactionHistory, benefitBalances, customAnnualFees, annualFeeBalances, annualFeeDates]);
 
   const [showAddOffer, setShowAddOffer] = useState(false);
   const [editingOffer, setEditingOffer] = useState<UserOffer | null>(null);
   const [selectedWalletCardId, setSelectedWalletCardId] = useState<string | null>(null);
+  const [walletExpanded, setWalletExpanded] = useState(false);
 
   const validOffers = useMemo(() => {
     const today = new Date();
@@ -133,11 +154,11 @@ const HomeScreen: React.FC = () => {
       result.breakdown.benefitDetails.forEach(bd => {
           const benefit = result.card.benefits.find(b => b.id === bd.benefitId);
           if (benefit) {
-              offsetDetails.push({ name: benefit.name, type: 'perk', value: bd.usedAmount });
+              offsetDetails.push({ name: benefit.name, type: 'perk', value: bd.usedAmount, benefitId: bd.benefitId });
           }
       });
       result.breakdown.offerDetails.forEach(od => {
-          offsetDetails.push({ name: od.offerName, type: 'offer', value: od.usedAmount });
+          offsetDetails.push({ name: od.offerName, type: 'offer', value: od.usedAmount, offerId: od.offerId });
       });
 
       const newRecord: TransactionRecord = {
@@ -173,6 +194,23 @@ const HomeScreen: React.FC = () => {
       setMerchant('');
       setResults(null);
   }, [annualFeeBalances, customAnnualFees, merchant, amount]);
+
+  const handleDeleteTransaction = useCallback(async (txId: string) => {
+    try {
+      const updatedState = await api.deleteTransaction(userId, txId);
+      const merged = mergeWithDefaults(updatedState);
+      setCards(merged.cards);
+      setActiveCardIds(merged.activeCardIds);
+      setActiveOffers(merged.activeOffers);
+      setTransactionHistory(merged.transactionHistory);
+      setBenefitBalances(merged.benefitBalances);
+      setCustomAnnualFees(merged.customAnnualFees);
+      setAnnualFeeBalances(merged.annualFeeBalances);
+      setAnnualFeeDates(merged.annualFeeDates);
+    } catch {
+      // Could show error toast, for now silently fail
+    }
+  }, [userId]);
 
   const handleSelectBenefit = useCallback((benefitName: string) => {
       if (selectedBenefit === benefitName) {
@@ -259,12 +297,26 @@ const HomeScreen: React.FC = () => {
     setBenefitBalances(prev => ({ ...prev, [benefitId]: newAmount }));
   }, []);
 
-  const handleResetToFreshState = useCallback(() => {
+  const handleResetToFreshState = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    if (!window.confirm('Clear all saved data and reset to fresh state with mock data? This cannot be undone.')) return;
-    clearStoredState();
-    window.location.reload();
-  }, []);
+    if (!window.confirm('Clear all saved data and reset to fresh state with randomized data? This cannot be undone.')) return;
+    const freshState = generateSeedState();
+    try {
+      await api.saveUserState(userId, freshState);
+      const merged = mergeWithDefaults(freshState);
+      setCards(merged.cards);
+      setActiveCardIds(merged.activeCardIds);
+      setActiveOffers(merged.activeOffers);
+      setTransactionHistory(merged.transactionHistory);
+      setBenefitBalances(merged.benefitBalances);
+      setCustomAnnualFees(merged.customAnnualFees);
+      setAnnualFeeBalances(merged.annualFeeBalances);
+      setAnnualFeeDates(merged.annualFeeDates);
+      setResults(null);
+    } catch {
+      // Silently fail
+    }
+  }, [userId]);
 
   const selectedWalletCard = cards.find(c => c.id === selectedWalletCardId);
 
@@ -272,6 +324,17 @@ const HomeScreen: React.FC = () => {
     () => activeOffers.filter(o => o.cardId === selectedWalletCardId),
     [activeOffers, selectedWalletCardId]
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-neutral-500 mt-4 font-bold uppercase tracking-widest">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white pb-32 safe-bottom">
@@ -286,6 +349,20 @@ const HomeScreen: React.FC = () => {
             WhatCard
           </h1>
           <div className="flex items-center gap-2">
+            {/* User pill */}
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 bg-neutral-900 border border-white/10 hover:border-white/20 px-4 py-2 rounded-full transition-colors"
+              title="Switch user"
+            >
+              <span className="w-5 h-5 bg-blue-600/30 text-blue-400 rounded-md flex items-center justify-center text-[10px] font-black">
+                {userName.charAt(0).toUpperCase()}
+              </span>
+              <span className="text-xs font-bold text-neutral-300">{userName}</span>
+            </button>
+            {saveError && (
+              <span className="w-2 h-2 bg-red-500 rounded-full" title="Save failed — will retry"></span>
+            )}
             <button
               type="button"
               onClick={handleResetToFreshState}
@@ -307,21 +384,41 @@ const HomeScreen: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-6 py-8 space-y-10">
+      <main className="max-w-lg mx-auto px-6 py-8 space-y-8">
+        {/* 1. Collapsible Wallet */}
         <section>
-          <div className="flex items-center justify-between mb-4 px-1">
-             <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">My Wallet</h2>
-             <span className="text-[10px] font-bold text-neutral-400 bg-neutral-900 border border-white/5 px-3 py-1 rounded-full">{activeCardIds.length} Active / {cards.length} Total</span>
-          </div>
-          <CardSelector
-            cards={cards}
-            activeCardIds={activeCardIds}
-            onToggleActive={handleToggleActiveCard}
-            onOpenDetails={(id) => setSelectedWalletCardId(id)}
-            feeBalances={annualFeeBalances}
-          />
+          <button
+            type="button"
+            onClick={() => setWalletExpanded(prev => !prev)}
+            className="w-full flex items-center justify-between px-1 py-2 group"
+          >
+            <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">My Wallet</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-neutral-400 bg-neutral-900 border border-white/5 px-3 py-1 rounded-full">{activeCardIds.length} Active / {cards.length} Total</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className={`w-4 h-4 text-neutral-500 transition-transform duration-200 ${walletExpanded ? 'rotate-180' : ''}`}
+              >
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </button>
+          {walletExpanded && (
+            <div className="mt-4 animate-fade-in">
+              <CardSelector
+                cards={cards}
+                activeCardIds={activeCardIds}
+                onToggleActive={handleToggleActiveCard}
+                onOpenDetails={(id) => setSelectedWalletCardId(id)}
+                feeBalances={annualFeeBalances}
+              />
+            </div>
+          )}
         </section>
 
+        {/* 2. Add Offer Form (conditional) */}
         {showAddOffer && (
           <section className="animate-slide-up">
              <OfferInput
@@ -337,24 +434,7 @@ const HomeScreen: React.FC = () => {
           </section>
         )}
 
-        <BenefitsList
-            cards={cards}
-            activeCardIds={activeCardIds}
-            balances={benefitBalances}
-            selectedBenefit={selectedBenefit}
-            onSelectBenefit={handleSelectBenefit}
-            onUpdateBalance={handleUpdateBenefitBalance}
-        />
-
-        <AllOffersList
-          offers={validOffers}
-          cards={cards}
-          onDeleteOffer={handleDeleteOffer}
-          onMarkUsed={handleMarkOfferUsed}
-          onEditOffer={(o) => {setEditingOffer(o); setShowAddOffer(true);}}
-          onSelectOffer={(o) => {setMerchant(o.merchantName); setAmount(o.minSpend?.toString() || '');}}
-        />
-
+        {/* 3. Input Section */}
         <section>
           <InputSection
             merchant={merchant} setMerchant={setMerchant}
@@ -363,10 +443,27 @@ const HomeScreen: React.FC = () => {
             selectedBenefit={selectedBenefit} setSelectedBenefit={handleSelectBenefit}
             onCalculate={handleCalculate}
             isAutoCategorized={isAutoCategorized} setIsAutoCategorized={setIsAutoCategorized}
-            cards={cards} activeCardIds={activeCardIds} benefitBalances={benefitBalances}
+            cards={cards} benefitBalances={benefitBalances}
           />
         </section>
 
+        {/* 4. Active Perks as compact badges */}
+        <PerksBadges
+            cards={cards}
+            activeCardIds={activeCardIds}
+            balances={benefitBalances}
+            selectedBenefit={selectedBenefit}
+            onSelectBenefit={handleSelectBenefit}
+        />
+
+        {/* 5. Available Offers as compact badges */}
+        <OffersBadges
+          offers={validOffers}
+          cards={cards}
+          onSelectOffer={(o) => {setMerchant(o.merchantName); setAmount(o.minSpend?.toString() || '');}}
+        />
+
+        {/* 6. Results */}
         {results && (
           <section className="space-y-4 animate-fade-in pb-4">
             <div className="flex items-center justify-between px-1">
@@ -388,6 +485,7 @@ const HomeScreen: React.FC = () => {
           </section>
         )}
 
+        {/* CardDetailsModal */}
         {selectedWalletCard && (
             <CardDetailsModal
                 key={selectedWalletCard.id}
@@ -408,6 +506,7 @@ const HomeScreen: React.FC = () => {
                 onDeleteOffer={handleDeleteOffer}
                 onUpdateOffer={handleUpdateOffer}
                 onMarkOfferUsed={handleMarkOfferUsed}
+                onDeleteTransaction={handleDeleteTransaction}
             />
         )}
       </main>

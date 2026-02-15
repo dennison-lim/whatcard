@@ -48,10 +48,18 @@ export interface UserOffer {
   isUsed?: boolean; // Tracks if offer has been redeemed/used
 }
 
+export interface AppUser {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface TransactionOffsetDetail {
   name: string;
   type: 'perk' | 'offer';
   value: number;
+  benefitId?: string;
+  offerId?: string;
 }
 
 export interface TransactionRecord {

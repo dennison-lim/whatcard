@@ -15,7 +15,6 @@ interface InputSectionProps {
   isAutoCategorized: boolean;
   setIsAutoCategorized: (val: boolean) => void;
   cards: CreditCard[];
-  activeCardIds: string[];
   benefitBalances: Record<string, number>;
 }
 
@@ -33,7 +32,7 @@ const CATEGORIES = [
 const InputSection: React.FC<InputSectionProps> = ({
     merchant, setMerchant, amount, setAmount, category, setCategory,
     selectedBenefit, setSelectedBenefit, onCalculate,
-    isAutoCategorized, setIsAutoCategorized, cards, activeCardIds, benefitBalances
+    isAutoCategorized, setIsAutoCategorized, cards, benefitBalances
 }) => {
 
   useEffect(() => {
@@ -55,23 +54,6 @@ const InputSection: React.FC<InputSectionProps> = ({
     setCategory(id);
     setIsAutoCategorized(false);
   };
-
-  const groupedBenefits = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return cards
-      .filter(card => activeCardIds.includes(card.id))
-      .map(card => ({
-        ...card,
-        validBenefits: card.benefits.filter(b => {
-          const isExpired = b.expirationDate && new Date(b.expirationDate) < today;
-          const balance = benefitBalances[b.id] ?? b.amount;
-          return !isExpired && balance > 0;
-        })
-      }))
-      .filter(card => card.validBenefits.length > 0);
-  }, [cards, activeCardIds, benefitBalances]);
 
   const selectedBenefitSummary = useMemo(() => {
     if (!selectedBenefit) return null;
@@ -151,68 +133,42 @@ const InputSection: React.FC<InputSectionProps> = ({
           </div>
         </div>
 
-        {/* Perk Selection Grouped by Card */}
-        <div className="space-y-6">
-            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 px-1">
-                Active Perks <span className="font-bold text-neutral-700 normal-case ml-1">(Override)</span>
-            </label>
-
-            {groupedBenefits.length > 0 ? (
-                <div className="space-y-6">
-                    {groupedBenefits.map(cardGroup => (
-                        <div key={cardGroup.id} className="space-y-3">
-                            <div className="flex items-center gap-2 px-1">
-                                <div className={`w-1 h-3 rounded-full ${cardGroup.imageColor}`} />
-                                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">{cardGroup.name}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {cardGroup.validBenefits.map(b => {
-                                    const isSelected = selectedBenefit === b.name;
-                                    const icon = getBenefitIcon(b.name);
-                                    return (
-                                        <button
-                                            key={b.id} type="button" onClick={() => setSelectedBenefit(isSelected ? '' : b.name)}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${
-                                                isSelected
-                                                ? 'bg-pink-600 border-pink-500 text-white shadow-lg shadow-pink-500/20'
-                                                : 'bg-neutral-800 border-white/5 text-neutral-400 hover:text-pink-400'
-                                            }`}
-                                        >
-                                            <span>{icon}</span>
-                                            <span>{b.name.replace(' Credit', '')}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+        {/* Active Override Summary */}
+        {selectedBenefitSummary ? (
+            <div className="animate-fade-in">
+                <div className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-3xl p-5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl ${selectedBenefitSummary.color} flex items-center justify-center text-black shadow-lg`}>
+                            <span className="text-[10px] font-black uppercase tracking-tighter">
+                                {selectedBenefitSummary.issuer}
+                            </span>
                         </div>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-[10px] text-neutral-600 italic px-1">No applicable perks active in wallet.</p>
-            )}
-
-            {selectedBenefitSummary && (
-                <div className="mt-8 animate-fade-in pt-4 border-t border-white/5">
-                    <div className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-3xl p-5 border border-white/10 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-2xl ${selectedBenefitSummary.color} flex items-center justify-center text-black shadow-lg`}>
-                                <span className="text-[10px] font-black uppercase tracking-tighter">
-                                    {selectedBenefitSummary.issuer}
-                                </span>
-                            </div>
-                            <div>
-                                <div className="text-[10px] text-neutral-500 font-black uppercase mb-0.5 tracking-widest">Active Override</div>
-                                <div className="text-sm font-black text-white">{selectedBenefit}</div>
-                            </div>
+                        <div>
+                            <div className="text-[10px] text-neutral-500 font-black uppercase mb-0.5 tracking-widest">Active Override</div>
+                            <div className="text-sm font-black text-white">{selectedBenefit}</div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
                         <div className="text-right">
                             <div className="text-2xl font-black text-green-400">${selectedBenefitSummary.balance.toFixed(0)}</div>
                             <div className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">Remaining</div>
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedBenefit(selectedBenefit)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 text-neutral-400 hover:text-white transition-colors"
+                            title="Clear override"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
+        ) : (
+            <p className="text-[10px] text-neutral-600 italic px-1 text-center">Tap a perk badge below to set override</p>
+        )}
 
         <button
           type="submit"
