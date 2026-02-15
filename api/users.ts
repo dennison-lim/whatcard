@@ -1,9 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis } from './redis';
+import { redis } from '../lib/redis';
 import type { AppUser } from '../types';
 import { generateSeedState } from '../utils/seedData';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    return await handle(req, res);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[api/users]', err);
+    return res.status(503).json({
+      error: 'Service unavailable',
+      message: message.includes('Missing Redis') ? message : 'Redis unavailable. Check server logs.',
+    });
+  }
+}
+
+async function handle(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     const users = await redis.get<AppUser[]>('users') ?? [];
     return res.status(200).json(users);
