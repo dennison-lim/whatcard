@@ -1,13 +1,18 @@
+import type { Redis } from '@upstash/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { redis } from '../lib/redis';
 import type { AppUser } from '../types';
 import { generateSeedState } from '../utils/seedData';
 
+function toMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Internal server error';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    return await handle(req, res);
+    const { redis } = await import('../lib/redis');
+    return await handle(req, res, redis);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
+    const message = toMessage(err);
     console.error('[api/users]', err);
     return res.status(503).json({
       error: 'Service unavailable',
@@ -16,9 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function handle(req: VercelRequest, res: VercelResponse) {
+async function handle(req: VercelRequest, res: VercelResponse, redis: Redis) {
   if (req.method === 'GET') {
-    const users = await redis.get<AppUser[]>('users') ?? [];
+    const users = (await redis.get<AppUser[]>('users')) ?? [];
     return res.status(200).json(users);
   }
 
@@ -35,7 +40,7 @@ async function handle(req: VercelRequest, res: VercelResponse) {
       createdAt: new Date().toISOString(),
     };
 
-    const users = await redis.get<AppUser[]>('users') ?? [];
+    const users = (await redis.get<AppUser[]>('users')) ?? [];
     users.push(newUser);
     await redis.set('users', users);
 
