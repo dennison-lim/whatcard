@@ -1,27 +1,37 @@
-import { Redis } from '@upstash/redis/node';
+import { Redis } from '@upstash/redis';
 
 let _redis: Redis | null = null;
 
-function getRedis(): Redis {
+export function getRedis(): Redis {
   if (_redis) return _redis;
-  const url =
-    process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token =
-    process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
   if (!url || !token) {
-    throw new Error(
-      'Missing Redis env: set KV_REST_API_URL and KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN) in Vercel project settings.'
-    );
+    const errorMsg = 'Missing Redis environment variables. Ensure KV_REST_API_URL and KV_REST_API_TOKEN are set.';
+    console.error('[Redis Config] Error:', errorMsg);
+    throw new Error(errorMsg);
   }
-  // Use fromEnv() for Vercel compatibility (reads KV_* and UPSTASH_*)
-  _redis = Redis.fromEnv();
-  return _redis;
+
+  try {
+    _redis = new Redis({
+      url,
+      token,
+    });
+    console.log('[Redis Config] Redis client initialized');
+    return _redis;
+  } catch (err) {
+    console.error('[Redis Config] Initialization failed:', err);
+    throw err;
+  }
 }
 
+// Still export the proxy but make it more transparent
 export const redis = new Proxy({} as Redis, {
-  get(_, prop) {
+  get(target, prop) {
     const instance = getRedis();
-    const value = (instance as unknown as Record<string, unknown>)[prop as string];
+    const value = (instance as any)[prop];
     return typeof value === 'function' ? value.bind(instance) : value;
   },
 });
