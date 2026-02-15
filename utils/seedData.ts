@@ -1,4 +1,4 @@
-import { allCards, sampleOffers } from '../data';
+import { allCards, sampleOffers } from '../data.js';
 import { UserOffer, TransactionRecord } from '../types';
 import type { PersistedState } from './storage';
 

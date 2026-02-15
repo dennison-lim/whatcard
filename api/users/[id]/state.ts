@@ -1,12 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { PersistedState } from '../../../utils/storage';
+import type { PersistedState } from '../../../utils/storage.js';
+import { getRedisClient } from '../../../lib/redis.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query;
   console.log(`[api/users/[id]/state] Handling ${req.method} request for ID:`, id);
 
   try {
-    const { redis } = await import('../../../lib/redis');
+    const redis = getRedisClient();
     
     if (typeof id !== 'string') {
       console.error('[api/users/[id]/state] Invalid ID:', id);

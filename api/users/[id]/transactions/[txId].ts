@@ -1,13 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { allCards } from '../../../../data';
-import type { PersistedState } from '../../../../utils/storage';
+import { allCards } from '../../../../data.js';
+import { getRedisClient } from '../../../../lib/redis.js';
+import type { PersistedState } from '../../../../utils/storage.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id, txId } = req.query;
   console.log(`[api/users/[id]/transactions/[txId]] Handling ${req.method} request for user ${id}, tx ${txId}`);
 
   try {
-    const { redis } = await import('../../../../lib/redis');
+    const redis = getRedisClient();
     
     if (typeof id !== 'string' || typeof txId !== 'string') {
       console.error('[api/users/[id]/transactions/[txId]] Invalid ID:', { id, txId });

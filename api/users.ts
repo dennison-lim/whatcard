@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { AppUser } from '../types';
-import { generateSeedState } from '../utils/seedData';
-import { getRedisClient } from '../lib/redis';
+import { generateSeedState } from '../utils/seedData.js';
+import { getRedisClient } from '../lib/redis.js';
 import crypto from 'crypto';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

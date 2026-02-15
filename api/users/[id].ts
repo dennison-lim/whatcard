@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { AppUser } from '../../types';
-import { getRedisClient } from '../../lib/redis';
+import { getRedisClient } from '../../lib/redis.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query;
